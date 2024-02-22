@@ -1,10 +1,14 @@
 package arteMartzialak;
 
+import javax.imageio.stream.ImageOutputStreamImpl;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-
+import javax.swing.border.MatteBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -15,10 +19,14 @@ import java.awt.GridLayout;
 import java.awt.Panel;
 import java.awt.event.*;
 import java.awt.peer.ButtonPeer;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.Enumeration;
 
 public class lehioItxura {
 
@@ -50,6 +58,7 @@ public class lehioItxura {
 	private static JButton 				btnSortu 			= new JButton("Sortu fitxeroa");
 	private static JButton 				btnGehituLerroa		= new JButton("Gehitu Lerroa fitxategiari");
 	private static JButton 				btnGarbitu			= new JButton("Garbitu");
+	private static JButton 				btnEditatu			= new JButton("Editatu (kontuz formatoarekin)");
 	private static JTextArea 			txtOutput 			= new JTextArea();
 	private static CardLayout 			cardLayout 			= new CardLayout();
 	private static JPanel 				centerPanel 		= new JPanel(cardLayout);
@@ -60,9 +69,9 @@ public class lehioItxura {
 	// Borrokalariaren formularioaren elementuak
 	private static JLabel 				formIzena 			= new JLabel("Borrokalariaren izena:");
 	private static JTextField 			txtIzena 			= new JTextField();
-	private static JLabel 				formPisua 			= new JLabel("Borrokalariaren pisua:");
+	private static JLabel 				formPisua 			= new JLabel("Borrokalariaren pisua (kg):");
 	private static JTextField 			txtPisua 			= new JTextField();
-	private static JLabel 				formData 			= new JLabel("Jaiotze data (DD/HH/UUUU):");
+	private static JLabel 				formData 			= new JLabel("Jaiotze data (UUUU-HH-EE):");
 	private static JTextField 			txtData 			= new JTextField();
 	private static JLabel 				formSexua 			= new JLabel("Aukeratu borrokalariaren sexua");
 	private static JRadioButton 		mutilaRad 			= new JRadioButton("Gizonezkoa");
@@ -71,9 +80,9 @@ public class lehioItxura {
 	private static ButtonGroup 			buttonGroup 		= new ButtonGroup();
 
 	// Lehiaketa formularioaren elementuak
-	private static JLabel 				formDataHasi 		= new JLabel("Lehiaketaren data hasiera (DD/HH/UUUU):");
+	private static JLabel 				formDataHasi 		= new JLabel("Lehiaketaren data hasiera (UUUU-HH-EE):");
 	private static JTextField 			txtDataHasi 		= new JTextField();
-	private static JLabel 				formDataBukatu 		= new JLabel("Lehiaketaren data bukaera (DD/HH/UUUU):");
+	private static JLabel 				formDataBukatu 		= new JLabel("Lehiaketaren data bukaera (UUUU-HH-EE):");
 	private static JTextField 			txtDataBukatu 		= new JTextField();
 	private static JLabel 				formLIzena 			= new JLabel("Izena");
 	private static JTextField 			txtLizena 			= new JTextField();
@@ -84,20 +93,51 @@ public class lehioItxura {
 			new String[] { "1- Jiu-jitsu", "2- Aikido", "3- Judo", "4- Kendo" });
 	
 	// Taldea formularioaren elementuak
-
-	// Erabiltzaile formularioaren elementuak
+	private static JLabel 				formTalde 			= new JLabel("Taldearen izena:");
+	private static JTextField 			txtTalde 			= new JTextField();
+	private static JLabel 				formTaldeKokapena 	= new JLabel("Taldearen kokapena / herria:");
+	private static JTextField 			txtTaldeKokapena 	= new JTextField();
+	private static JLabel 				formKontaktua 		= new JLabel("Taldearen kontaktua:");
+	private static JTextField 			txtKontaktua 		= new JTextField();
+	private static JLabel 				formBazkide 		= new JLabel("Bazkide kopurua:");
+	private static JTextField 			txtBazkide 			= new JTextField();
+	
+	// Formularioen izenak fitxategia bihurtu
 	private static void datuakFitxategiaBihurtu() {
-		String datuak = txtOutput.getText();
-		String kokapena = "C:/Users/1ag3.jonmgonz/Desktop/erronkaKobaz/datuak.txt";
 		
-		try {
-			FileWriter wr = new FileWriter(kokapena);
-			wr.write(datuak);
-			wr.close();
-			JOptionPane.showMessageDialog(null, "Datuak gorde dira " + kokapena + " kokapenean, datu basean sartzeko prest.");
-		} catch (IOException e) {
-			JOptionPane.showMessageDialog(null, "Errorea testua gordetzerakoan: " + e.getMessage(), "Errorea", JOptionPane.ERROR_MESSAGE);
-		}
+		String fileName = JOptionPane.showInputDialog("Sartu fitxategiaren izena:");
+		fileName += ".txt";
+		
+        if (fileName != null && !fileName.isEmpty()) {
+            String filePath = JOptionPane.showInputDialog("Fitxategiaren kokapena ezarri (helbide osoa.)");
+            
+            if (filePath != null && !filePath.isEmpty()) {
+            	
+                // Konprobatu ea direktorioa egokia den
+                if (!filePath.endsWith(File.separator))
+                    filePath += File.separator;
+                
+                // txt luzapena konprobatu
+                if (!fileName.endsWith(".txt"))
+                    fileName += ".txt";
+                
+                // Fitxategia sortu.
+                File file = new File(filePath + fileName);
+                try {
+                    if (file.createNewFile()) {
+                    	FileWriter writer = new FileWriter(file);
+                        writer.write(txtOutput.getText());
+                        writer.close();
+                        JOptionPane.showMessageDialog(null, "Fitxategia ondo sortu da!");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Fitxategia existitzen da.", "Errorea", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(null, "Errorea fitxategia sortzerakoan. Berriro saiatu", "Error", JOptionPane.ERROR_MESSAGE);
+                    ex.printStackTrace();
+                }
+            }
+        }
 	}
 
 	// Botoia sakatzerakoan txtArean gorde lehiaketaren datuak
@@ -131,8 +171,90 @@ public class lehioItxura {
 			return;
 		}
 		
-		outputBuilder.append(dataBukaera).append("	").append(dataHasiera).append("	").append(ID).append(",");
+		outputBuilder.append(dataBukaera).append("	").append(dataHasiera).append("	").append(ID).append(",");	
+		txtOutput.append(outputBuilder.toString() + "\n");
+	}
 	
+	// Borrokalariaren datuak output testu kutxara gehitzeko metodoa
+	private static void borrokalariaDatuakGehitu() {
+		
+		// Atributoen datuak lortu testu kutxa ezberdinetatik
+		String izena 	= txtIzena.getText();
+		String pisua 	= txtPisua.getText();
+		String dataJ	= txtData.getText();
+		String sexua	= lortuSexua(buttonGroup);
+		
+		StringBuilder outputBuilder = new StringBuilder();
+		outputBuilder.setLength(0);
+		
+		// Izenaren eta pisuaren testu kutxak hutsik dauden konprobatu
+		if (izena == null || izena.isEmpty() || pisua == null || pisua.isEmpty()) {
+			JOptionPane.showMessageDialog(null, "Testu kutxak ezin dute hutsik egon (izena edo pisua)", "Errorea",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		// Pisua zenbakiak diren konprobatu
+		if (!pisua.matches("\\d+")) {
+		    JOptionPane.showMessageDialog(null, "Pisua zenbakiz osatu behar da", "Errorea",
+		            JOptionPane.ERROR_MESSAGE);
+		    return;
+		}
+		
+		outputBuilder.append(izena).append("	").append(pisua).append("	");
+		
+		// Dataren formato egokia erabiltzeko errore kontrola
+		try {
+			LocalDate data 		= LocalDate.parse(dataJ);
+		} catch (DateTimeParseException e) {
+			JOptionPane.showMessageDialog(null, "Data formatu desegokian dago (UUUU-HH-EE)", "Errorea",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		outputBuilder.append(dataJ).append("	").append(sexua).append(",");	
+		txtOutput.append(outputBuilder.toString() + "\n");
+	}
+	
+	// 3 Radio button arabera, aukeratutako radioButton-a lortu eta sexua atera
+	private static String lortuSexua(ButtonGroup buttonGroup) {
+	    Enumeration<AbstractButton> botoiak = buttonGroup.getElements();
+	    while (botoiak.hasMoreElements()) {
+	        AbstractButton button = botoiak.nextElement();
+	        if (button.isSelected()) {
+	            return button.getText();
+	        }
+	    }
+	    return null;
+	}
+	
+	private static void taldeaDatuakLortu() {
+		
+		String izena 		= txtTalde.getText();
+		String kokapena 	= txtTaldeKokapena.getText();
+		String kontaktua 	= txtKontaktua.getText();
+		String bazkideKop 	= txtBazkide.getText();
+		
+		StringBuilder outputBuilder = new StringBuilder();
+		outputBuilder.setLength(0);
+		
+		// Testu kutxak hutsik dauden konprobatu
+		if (izena == null || izena.isEmpty() || kokapena == null || kokapena.isEmpty() || kontaktua == null || kontaktua.isEmpty()) {
+			JOptionPane.showMessageDialog(null, "Testu kutxak ezin dute hutsik egon (izena, kokapena edo kontaktua)", "Errorea",
+					JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		outputBuilder.append(izena).append("	").append(kokapena).append("	").append(kontaktua).append("	");
+		
+		// Bazkide kopurua zenbakiak diren konprobatu
+		if (!bazkideKop.matches("\\d+")) {
+		    JOptionPane.showMessageDialog(null, "Bazkide kopurua zenbakiz osatu behar da", "Errorea",
+		            JOptionPane.ERROR_MESSAGE);
+		    return;
+		}
+		
+		outputBuilder.append(bazkideKop).append(",");
 		txtOutput.append(outputBuilder.toString() + "\n");
 	}
 
@@ -145,22 +267,70 @@ public class lehioItxura {
 		buttonGroup.add(ezRad);
 
 		// Panel ezberdinei border inbisibleak gehitu
-		panel1.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Aukeratu bat"),
-				new EmptyBorder(10, 10, 10, 10)));
-		panelBotoiak.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Output"),
-				new EmptyBorder(10, 10, 10, 10)));
-		panelBorroka.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Input"),
-				new EmptyBorder(10, 10, 10, 10)));
-		panelLehiaketa.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("Input"),
-				new EmptyBorder(10, 10, 10, 10)));
+		panel1.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Aukeratu bat"),
+                BorderFactory.createCompoundBorder(
+                        new MatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY),
+                        new EmptyBorder(10, 10, 10, 10)
+                )
+        ));
+		panelBotoiak.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Output"),
+                BorderFactory.createCompoundBorder(
+                        new MatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY),
+                        new EmptyBorder(10, 10, 10, 10)
+                )
+        ));
+		panelBorroka.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Input"),
+                BorderFactory.createCompoundBorder(
+                        new MatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY),
+                        new EmptyBorder(10, 10, 10, 10)
+                )
+        ));
+		panelLehiaketa.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Input"),
+                BorderFactory.createCompoundBorder(
+                        new MatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY),
+                        new EmptyBorder(10, 10, 10, 10)
+                )
+        ));
+		panelTaldea.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Input"),
+                BorderFactory.createCompoundBorder(
+                        new MatteBorder(1, 1, 1, 1, Color.LIGHT_GRAY),
+                        new EmptyBorder(10, 10, 10, 10)
+                )
+        ));
 
 		// Botoiak panelaren elementuak gehitu
-		panelBotoiak.setLayout(new FlowLayout(FlowLayout.CENTER, 30, 10));
+		panelBotoiak.setLayout(new FlowLayout(FlowLayout.CENTER, 30, 30));
+		btnGehituLerroa.setBackground(Color.BLUE);
+		btnGehituLerroa.setForeground(Color.WHITE);
+		btnGehituLerroa.setFont(new Font("Arial", Font.BOLD, 16));
+		btnGarbitu.setBackground(Color.BLUE);
+		btnGarbitu.setForeground(Color.WHITE);
+		btnGarbitu.setFont(new Font("Arial", Font.BOLD, 16));
+		btnEditatu.setBackground(Color.BLUE);
+		btnEditatu.setForeground(Color.WHITE);
+		btnEditatu.setFont(new Font("Arial", Font.BOLD, 16));
+		btnSortu.setBackground(Color.BLUE);
+		btnSortu.setForeground(Color.WHITE);
+		btnSortu.setFont(new Font("Arial", Font.BOLD, 16));
 		panelBotoiak.add(btnGehituLerroa);
 		panelBotoiak.add(btnGarbitu);
+		panelBotoiak.add(btnEditatu);
 		panelBotoiak.add(btnSortu);
-		txtOutput.setPreferredSize(new Dimension(600, 150));
-		txtOutput.setEditable(false);
+		txtOutput.setPreferredSize(new Dimension(800, 200));
+		txtOutput.setFont(new Font("Arial", Font.PLAIN, 14));
+		txtOutput.setBackground(Color.LIGHT_GRAY);
+		txtOutput.setForeground(Color.BLACK);
+		txtOutput.setBorder(BorderFactory.createLineBorder(Color.DARK_GRAY));
+		
+		// Crea un JScrollPane para el JTextArea
+		JScrollPane scrollPane = new JScrollPane(txtOutput);
+		scrollPane.setPreferredSize(new Dimension(600, 150));
+		
 		panelBotoiak.add(txtOutput);
 
 		// Aukeraketa ezberdinak egiteko panelaren elementu ezberdinak gehitu
@@ -169,7 +339,7 @@ public class lehioItxura {
 		panel1.add(fitxCombo);
 
 		// Borrokalarien datuak sartzeko panelaren elementuak
-		panelBorroka.setLayout(new GridLayout(11, 1));
+		panelBorroka.setLayout(new GridLayout(9, 1));
 		panelBorroka.add(formIzena);
 		panelBorroka.add(txtIzena);
 		panelBorroka.add(formPisua);
@@ -193,12 +363,24 @@ public class lehioItxura {
 		panelLehiaketa.add(txtKokapena);
 		panelLehiaketa.add(formMartzial);
 		panelLehiaketa.add(lehiaketaCombo);
-
+		
+		// Taldearen datuak sartzeko panelaren elementuak
+		panelTaldea.setLayout(new GridLayout(7, 1));
+		panelTaldea.add(formTalde);
+		panelTaldea.add(txtTalde);
+		panelTaldea.add(formTaldeKokapena);
+		panelTaldea.add(txtTaldeKokapena);
+		panelTaldea.add(formKontaktua);
+		panelTaldea.add(txtKontaktua);
+		panelTaldea.add(formBazkide);
+		panelTaldea.add(txtBazkide);
+		
 		// Erabiltzailea panelaren elementuak
 		panelErabiltzailea.setLayout(new BoxLayout(panelErabiltzailea, BoxLayout.Y_AXIS));
 
 		centerPanel.add(panelBorroka, "Borrokalaria");
 		centerPanel.add(panelLehiaketa, "Lehiaketa");
+		centerPanel.add(panelTaldea, "Taldea");
 
 		mainPanel.add(panel1, BorderLayout.WEST);
 		mainPanel.add(centerPanel, BorderLayout.CENTER);
@@ -213,24 +395,63 @@ public class lehioItxura {
 			}
 		});
 		
+		// Output-ari lerroak gehitu erabiltzaileak ikusteko (comboBox aukeraketa arabera)
 		btnGehituLerroa.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (fitxCombo.getSelectedIndex() == 0) {
+					borrokalariaDatuakGehitu();
+				}
 				if (fitxCombo.getSelectedIndex() == 1) {
 					lehiaketaDatuakGehitu();
-				}				
+				}
+				if (fitxCombo.getSelectedIndex() == 2) {
+					taldeaDatuakLortu();
+				}
 			}
 		});
 		
+		// Output-en dauden lerroak ezabatzeko
 		btnGarbitu.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				txtOutput.setText("");
 			}
 		});
 		
+		// Output zatia editatzeko
+		btnEditatu.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (!txtOutput.getText().isEmpty()) {
+					txtOutput.setEditable(true);
+					txtOutput.setBorder(BorderFactory.createEtchedBorder(Color.black, null));
+				}	else	{
+					JOptionPane.showMessageDialog(null,
+			                "Editatzeko, lerro bat gehitu behar duzu.",
+			                "Kontuz!",
+			                JOptionPane.WARNING_MESSAGE);
+				}
+			}
+		});
+		
+		// Editatu ondoren, bukatzeko
+		txtOutput.addMouseListener(new MouseAdapter() {
+		    @Override
+		    public void mouseExited(MouseEvent e) {
+		        txtOutput.setEditable(false);
+		        txtOutput.setBorder(BorderFactory.createEtchedBorder());
+		    }
+		});
+		
 		// Sortutako datuen textua fitxategia bihutzerko botoiaren bidez
 		btnSortu.addActionListener(new ActionListener() {			
 			public void actionPerformed(ActionEvent e) {
+				if (!txtOutput.getText().isEmpty()) {
 				datuakFitxategiaBihurtu();				
+				}	else	{
+					JOptionPane.showMessageDialog(null,
+			                "Output-a hutsik dago. Mesedez, lerro bat sartu fitxategia sortu baino lehen.",
+			                "Kontuz!",
+			                JOptionPane.WARNING_MESSAGE);
+				}
 			}
 		});
 
@@ -277,17 +498,52 @@ public class lehioItxura {
 		panel.add(deskLabel, gbcDesk);
 		frame.add(panel, BorderLayout.CENTER);
 
+		// Programatik ateratzeko
 		ateraItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
 			}
 		});
 
+		// Artxibo berri bat sortzeko aukera
 		berriaItem.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				artxiboBerriaElementuak();
+			}
+		});
+		
+		// Artxibo txt bat irekitzeko, ordenagailuko kokapen ezberdin ikusiz
+		irekiItem.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser fileChooser = new JFileChooser();
+
+				FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos de Texto", "txt");
+				fileChooser.setFileFilter(filter);
+
+				int result = fileChooser.showOpenDialog(null);
+
+				 if (result == JFileChooser.APPROVE_OPTION) {
+	                    File selectedFile = fileChooser.getSelectedFile();
+	                    artxiboBerriaElementuak();
+	                    try {
+	                        FileReader reader = new FileReader(selectedFile);
+	                        BufferedReader bufferedReader = new BufferedReader(reader);
+	                        txtOutput.setText("");
+	                        String line;
+	                        while ((line = bufferedReader.readLine()) != null) {
+	                        	txtOutput.append(line + "\n");
+	                        }
+	                        bufferedReader.close();
+	                    } catch (IOException ex) {
+	                        ex.printStackTrace();
+	                        JOptionPane.showMessageDialog(null,
+	                                "Errorea fitxategia irakurtzerakoan", "Errorea", JOptionPane.ERROR_MESSAGE);
+	                    }
+	                }
 			}
 		});
 
